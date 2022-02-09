@@ -33,14 +33,15 @@ public:
 
 int main()
 {
-
+    // the thread obj can take either function, functor or lambda function as argument to create new thread
     std::thread my_thread_obj_01(myprint);
 
     /*Functor functor;
     std::thread my_thread_obj_02(functor);*/
 
-    //my_thread_obj_01.join();
-    my_thread_obj_01.detach();
+    if (my_thread_obj_01.joinable())
+        my_thread_obj_01.join();
+    //my_thread_obj_01.detach();
 
     std::cout << "Hello World!\n";
 
