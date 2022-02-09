@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <thread>
+#include <string>
 
 void printNum(const int& number) {
 
@@ -10,11 +11,14 @@ void printNum(const int& number) {
 
 }
 
-void myprint() 
+void myprint(const int& num, const char* arr) 
+// void myprint(const int num, const string& arr) 
 {
     std::cout << "Start excuting 2nd thread" << std::endl;
 
-    printNum(10);
+    //printNum(10);
+    std::cout << "Passed number is: " << num << std::endl;
+    std::cout << "Passed array is: " << arr << std::endl;
 
     std::cout << "End excuting 2nd thread" << std::endl;
 }
@@ -33,8 +37,17 @@ public:
 
 int main()
 {
-    // the thread obj can take either function, functor or lambda function as argument to create new thread
-    std::thread my_thread_obj_01(myprint);
+    int num = 1;
+    int& num_ref = num;
+    char str_arr[] = "this is a test!";
+    // even we use ref to pass num here but thread will still create a copy of num in run, but still better not use ref here
+    // char pointer will be directly passed to function, detach will make mem leak so should avoid pass pointer to thread as arg
+    // use string ref will still not work, because implicity casting from char[] to string have no garanteen time and excution, the
+    // main thread could be completed before casting happen. Also implicity casting call of class constructor will cause same issue
+    // so the correct way is to use explicity casting like string(str_arr) to generate a hard copy of str_arr and pass as arg
+    // for class A we will also have to use A(*) to explicity casting which will call copy constructor to create new temp object
+    // however the function better to take class ref as arg, other wise the function will make second copy of the temp object
+    std::thread my_thread_obj_01(myprint, num, str_arr);
 
     /*Functor functor;
     std::thread my_thread_obj_02(functor);*/
