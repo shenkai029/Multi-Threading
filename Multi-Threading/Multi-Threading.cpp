@@ -4,59 +4,77 @@
 #include <iostream>
 #include <thread>
 #include <string>
+#include <vector>
+#include <list>
+#include <mutex>
 
-void printNum(const int& number) {
+// read only data is safe to use for multi-thread, so won't allow multiple threads write/read to same data  at same time
+std::vector<int> my_vec = { 1, 2, 3 }; 
 
-    std::cout << "Print Passing number: " << number << std::endl;
+void myprint(const int& num) 
+{
+    std::cout << "Start excuting thread with #" << num << std::endl;
 
+    std::cout << "thread id #" << std::this_thread::get_id() << " read data from my_vec: " << my_vec[0] << my_vec[1] << my_vec[2] << std::endl;
+
+    std::cout << "End excuting thread with #" << num << std::endl;
 }
 
-void myprint(const int& num, const char* arr) 
-// void myprint(const int num, const string& arr) 
-{
-    std::cout << "Start excuting 2nd thread" << std::endl;
-
-    //printNum(10);
-    std::cout << "Passed number is: " << num << std::endl;
-    std::cout << "Passed array is: " << arr << std::endl;
-
-    std::cout << "End excuting 2nd thread" << std::endl;
-}
-
-class Functor 
-{
+// class to simulate push and pop data 
+class A {
 public:
-    void operator () () {
-        std::cout << "Start excuting 2nd thread" << std::endl;
+    void m_Msg_Push_Queue() {
+        for (int i = 0; i < 10000; ++i) {
+            std::cout << "m_Queue pushed 1 element : " << i << std::endl;
 
-        printNum(10);
-
-        std::cout << "End excuting 2nd thread" << std::endl;
+            m_mutex.lock();
+            m_Queue.push_back(i);
+            m_mutex.unlock();
+        }
     }
+
+    void m_Msg_Pop_Queue() {
+        for (int i = 0; i < 10000; ++i) {
+            if (!m_Queue.empty()) { // if queue is not empty
+                m_mutex.lock();
+                int cmd = m_Queue.front();
+                m_Queue.pop_front();
+                m_mutex.unlock();
+                // process cmd 
+                std::cout << "m_Queue popoed 1 element: " << cmd << std::endl;
+            }
+            else {
+                std::cout << "Try to pop data from m_Queue, but it is empty now " << i << std::endl;
+            }
+        }
+    }
+    
+private:
+    std::list<int> m_Queue; // share data for multi-thread
+    std::mutex m_mutex; // create mutex memeber to lock/unlock data
 };
 
 int main()
 {
-    int num = 1;
-    int& num_ref = num;
-    char str_arr[] = "this is a test!";
-    // even we use ref to pass num here but thread will still create a copy of num in run, but still better not use ref here
-    // char pointer will be directly passed to function, detach will make mem leak so should avoid pass pointer to thread as arg
-    // use string ref will still not work, because implicity casting from char[] to string have no garanteen time and excution, the
-    // main thread could be completed before casting happen. Also implicity casting call of class constructor will cause same issue
-    // so the correct way is to use explicity casting like string(str_arr) to generate a hard copy of str_arr and pass as arg
-    // for class A we will also have to use A(*) to explicity casting which will call copy constructor to create new temp object
-    // however the function better to take class ref as arg, other wise the function will make second copy of the temp object
-    std::thread my_thread_obj_01(myprint, num, str_arr);
+    //std::vector<std::thread> my_thread;
 
-    /*Functor functor;
-    std::thread my_thread_obj_02(functor);*/
+    //// all thread might not follow excuation order from 0 to 9
+    //for (int i = 0; i < 10; ++i) {
+    //    my_thread.push_back(std::thread(myprint, i));
+    //}
 
-    if (my_thread_obj_01.joinable())
-        my_thread_obj_01.join();
-    //my_thread_obj_01.detach();
+    //// better to use join wait for all other threads join main thread at the end for stable result
+    //for (auto it = my_thread.begin(); it != my_thread.end(); ++it) {
+    //    it->join();
+    //}
 
-    std::cout << "Hello World!\n";
+    A my_obj_A;
+    std::thread my_pop_Queue(&A::m_Msg_Pop_Queue, &my_obj_A);
+    std::thread my_push_Queue(&A::m_Msg_Push_Queue, &my_obj_A); // use reference here to make sure push/pop same class data memeber
+    my_pop_Queue.join();
+    my_push_Queue.join();
+
+    std::cout << "Hello World!" << std::endl;
 
     return 0;
 }
