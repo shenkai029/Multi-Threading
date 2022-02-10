@@ -35,8 +35,8 @@ public:
 
     void m_Msg_Pop_Queue() {
         for (int i = 0; i < 10000; ++i) {
+            m_mutex.lock();
             if (!m_Queue.empty()) { // if queue is not empty
-                m_mutex.lock();
                 int cmd = m_Queue.front();
                 m_Queue.pop_front();
                 m_mutex.unlock();
@@ -44,6 +44,7 @@ public:
                 std::cout << "m_Queue popoed 1 element: " << cmd << std::endl;
             }
             else {
+                m_mutex.unlock();
                 std::cout << "Try to pop data from m_Queue, but it is empty now " << i << std::endl;
             }
         }
