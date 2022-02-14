@@ -28,11 +28,15 @@ public:
         for (int i = 0; i < 10000; ++i) {
             {
                 std::cout << "m_Queue pushed 1 element : " << i << std::endl;
-                std::lock_guard<std::mutex> push_guard(m_mutex); // if use lock_guard, no need use lock() and unlock()
+                m_mutex.lock();
+                std::unique_lock<std::mutex> push_guard(m_mutex, std::adopt_lock); // if use lock_guard/unique_lock, no need use lock() and unlock()
                 m_Queue.push_back(i);
             }
         }
     }
+
+    // std::adopt_lock can be use as second argument for both lock_guard and unique_lock only when the mutex have been locked, so it won't 
+    // call lock in constructor, but only will unlock the mutex when destrucor called
 
     void m_Msg_Pop_Queue() {
         
@@ -40,7 +44,8 @@ public:
             {
                 // add sleep to balance time between last unlock and current lock, otherwise pop will lock mutex faster than push
                 std::this_thread::sleep_for(std::chrono::microseconds(1)); 
-                std::lock_guard<std::mutex> pop_guard(m_mutex); // if use lock_guard, no need use lock() and unlock()
+                m_mutex.lock();
+                std::unique_lock<std::mutex> pop_guard(m_mutex, std::adopt_lock); // if use lock_guard/unique_lock, no need use lock() and unlock()
                 if (!m_Queue.empty()) { // if queue is not empty
                     int cmd = m_Queue.front();
                     m_Queue.pop_front();
