@@ -43,6 +43,7 @@ public:
     // call lock in constructor, but only will unlock the mutex when destrucor called
 
     // std::try_to_lock will allow the thread do not have to wait for unlock of the mutex, and continue excution other code
+    // try_to_lock require the mutex unlocked before using it, otherwise will cause error
 
     void m_Msg_Pop_Queue() {
         
@@ -52,7 +53,7 @@ public:
                 //std::this_thread::sleep_for(std::chrono::microseconds(1)); 
                 m_mutex.lock();
                 std::unique_lock<std::mutex> pop_guard(m_mutex, std::adopt_lock); // if use lock_guard/unique_lock, no need use lock() and unlock()
-                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+                std::this_thread::sleep_for(std::chrono::milliseconds(200)); // add sleep to test try_to_lock
                 if (!m_Queue.empty()) { // if queue is not empty
                     int cmd = m_Queue.front();
                     m_Queue.pop_front();
