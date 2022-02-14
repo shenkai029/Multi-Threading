@@ -29,9 +29,7 @@ public:
             {
                 std::cout << "m_Queue pushed 1 element : " << i << std::endl;
                 std::lock_guard<std::mutex> push_guard(m_mutex); // if use lock_guard, no need use lock() and unlock()
-                //m_mutex.lock();
                 m_Queue.push_back(i);
-                //m_mutex.unlock();
             }
         }
     }
@@ -40,20 +38,18 @@ public:
         
         for (int i = 0; i < 10000; ++i) {
             {
-                //std::lock_guard<std::mutex> pop_guard(m_mutex); // if use lock_guard, no need use lock() and unlock()
-                m_mutex.lock();
+                // add sleep to balance time between last unlock and current lock, otherwise pop will lock mutex faster than push
+                std::this_thread::sleep_for(std::chrono::microseconds(1)); 
+                std::lock_guard<std::mutex> pop_guard(m_mutex); // if use lock_guard, no need use lock() and unlock()
                 if (!m_Queue.empty()) { // if queue is not empty
                     int cmd = m_Queue.front();
                     m_Queue.pop_front();
-                    m_mutex.unlock();
                     // process cmd 
                     std::cout << "m_Queue popoed 1 element: " << cmd << std::endl;
                 }
                 else {
-                    m_mutex.unlock();
                     std::cout << "Try to pop data from m_Queue, but it is empty now " << i << std::endl;
                 }
-                //m_mutex.unlock();
             }
         }
     }
