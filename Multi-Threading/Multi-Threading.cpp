@@ -51,6 +51,11 @@ public:
     // lock(), unlock(), try_lock() for more flexiable use in the code
     // release() will unbond mutex obj from unique_lock obj, and return pointer to the unbonded mutex for user to unlock 
 
+    // when using unique_lock bond mutex obj with, the mutex obj cannot be copied, but can be moved:
+    // std::unique_lock<std::mutex> guard_01(mutex);
+    // std::unique_lock<std::mutex> guard_02(std::move(guard_01)
+    // also if we return a unique_lock obj from a function, the move constructor will be called to move same mutex to outer scope obj
+
     void m_Msg_Pop_Queue() {
         
         for (int i = 0; i < 10000; ++i) {
