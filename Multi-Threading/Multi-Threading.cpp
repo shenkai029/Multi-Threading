@@ -18,9 +18,20 @@ public:
     static MySingleton* GetInstance() {
         if (m_instance == nullptr) {
             m_instance = new MySingleton();
+            static MemRelease mr;
         }
         return m_instance;
     }
+
+    class MemRelease {
+    public:
+        ~MemRelease() {
+            if (MySingleton::m_instance != nullptr) {
+                delete MySingleton::m_instance;
+                MySingleton::m_instance = nullptr;
+            }
+        }
+    };
 
     void func() {
         std::cout << "Test...obj address: " << m_instance<< std::endl;
