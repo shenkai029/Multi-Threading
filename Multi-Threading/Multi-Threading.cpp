@@ -13,12 +13,22 @@ private :
 	MySingleton() {}
 
     static MySingleton* m_instance;
+    static std::mutex* m_mutex;
 
 public:
     static MySingleton* GetInstance() {
-        if (m_instance == nullptr) {
-            m_instance = new MySingleton();
-            static MemRelease mr;
+        if (m_mutex == nullptr) {
+            m_mutex = new std::mutex();
+        }
+
+        if (m_instance == nullptr) { // double lock/check, if not nullptr no need to lock
+            std::unique_lock<std::mutex> my_lock(*m_mutex); // add lock
+
+            if (m_instance == nullptr) {
+                m_instance = new MySingleton();
+                std::cout << "Init instance only once!" << std::endl;
+                static MemRelease mr;
+            }
         }
         return m_instance;
     }
@@ -29,6 +39,9 @@ public:
             if (MySingleton::m_instance != nullptr) {
                 delete MySingleton::m_instance;
                 MySingleton::m_instance = nullptr;
+
+                delete MySingleton::m_mutex;
+                MySingleton::m_mutex = nullptr;
             }
         }
     };
@@ -39,15 +52,33 @@ public:
 };
 
 MySingleton* MySingleton::m_instance = nullptr; // static member must be initialize outside class scope
+std::mutex* MySingleton::m_mutex = nullptr;
 
+void thread_func() {
+    std::cout << "Start excuting thread....." << std::endl;
+
+    MySingleton* obj = MySingleton::GetInstance();
+    std::cout << "Thread sleep..." << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    obj->func();
+
+    std::cout << "Stop excuting thread....." << std::endl;
+}
+
+// for use singleton class in muti-threading, it is better to get instance in main thread, so the obj will be destory when main thread end 
 
 int main()
 {
-    MySingleton* my_obj_01 = MySingleton::GetInstance();
+   /* MySingleton* my_obj_01 = MySingleton::GetInstance();
     my_obj_01->func();
     
     MySingleton* my_obj_02 = MySingleton::GetInstance();
-    my_obj_02->func();
+    my_obj_02->func();*/
+
+    std::thread th_01(thread_func);
+    std::thread th_02(thread_func);
+    th_01.join();
+    th_02.join();
 
     return 0;
 }
