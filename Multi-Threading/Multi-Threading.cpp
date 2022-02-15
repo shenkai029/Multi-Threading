@@ -8,28 +8,44 @@
 #include <list>
 #include <mutex>
 
+
+//std::once_flag m_flag;
+
 class MySingleton {
 private :
 	MySingleton() {}
 
     static MySingleton* m_instance;
     static std::mutex* m_mutex;
+    static std::once_flag* m_flag;
 
 public:
+
+    static void CreateInstance() {
+        m_instance = new MySingleton();
+        std::cout << "Init instance only once!" << std::endl;
+        static MemRelease mr;
+    }
+
     static MySingleton* GetInstance() {
-        if (m_mutex == nullptr) {
-            m_mutex = new std::mutex();
+        if (m_flag == nullptr) {
+            m_flag = new std::once_flag();
         }
+        //if (m_mutex == nullptr) {
+        //    m_mutex = new std::mutex();
+        //}
 
-        if (m_instance == nullptr) { // double lock/check, if not nullptr no need to lock
-            std::unique_lock<std::mutex> my_lock(*m_mutex); // add lock
+        //if (m_instance == nullptr) { // double lock/check, if not nullptr no need to lock
+        //    std::unique_lock<std::mutex> my_lock(*m_mutex); // add lock
 
-            if (m_instance == nullptr) {
-                m_instance = new MySingleton();
-                std::cout << "Init instance only once!" << std::endl;
-                static MemRelease mr;
-            }
-        }
+        //    if (m_instance == nullptr) {
+        //        m_instance = new MySingleton();
+        //        std::cout << "Init instance only once!" << std::endl;
+        //        static MemRelease mr;
+        //    }
+        //}
+        std::call_once(*m_flag, CreateInstance); // use call_once instead of using mutex and unique_lock
+
         return m_instance;
     }
 
@@ -39,9 +55,16 @@ public:
             if (MySingleton::m_instance != nullptr) {
                 delete MySingleton::m_instance;
                 MySingleton::m_instance = nullptr;
+            }
 
+            if (MySingleton::m_mutex != nullptr) {
                 delete MySingleton::m_mutex;
                 MySingleton::m_mutex = nullptr;
+            }
+
+            if (MySingleton::m_flag != nullptr) {
+                delete MySingleton::m_flag;
+                MySingleton::m_flag = nullptr;
             }
         }
     };
@@ -53,13 +76,14 @@ public:
 
 MySingleton* MySingleton::m_instance = nullptr; // static member must be initialize outside class scope
 std::mutex* MySingleton::m_mutex = nullptr;
+std::once_flag* MySingleton::m_flag = nullptr;
 
 void thread_func() {
     std::cout << "Start excuting thread....." << std::endl;
 
     MySingleton* obj = MySingleton::GetInstance();
     std::cout << "Thread sleep..." << std::endl;
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::this_thread::sleep_for(std::chrono::seconds(3));
     obj->func();
 
     std::cout << "Stop excuting thread....." << std::endl;
