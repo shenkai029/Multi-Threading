@@ -33,7 +33,8 @@ public:
                 //if (push_guard.owns_lock()) {
                 std::cout << "m_Queue pushed 1 element : " << i << std::endl;
                 m_Queue.push_back(i);
-                m_cond.notify_one(); // try to notify other thread that is in wait(), and continue excution
+                //m_cond.notify_one(); // try to notify only one other thread that is in wait(), and continue excution
+                m_cond.notify_all(); // try to notify not only one thread that is in wait()
                 //}
                 /*else {
                     std::cout << "Did not get the lock, just do something else..." << std::endl;
@@ -76,8 +77,8 @@ public:
 
             int cmd = m_Queue.front();
             m_Queue.pop_front();
+            std::cout << "m_Queue popoed 1 element: " << cmd << ", threadID = " << std::this_thread::get_id() << std::endl;
             pop_guard.unlock(); // release lock earlier for code efficiency
-            std::cout << "m_Queue popoed 1 element: " << cmd << std::endl;
         }
         
         //for (int i = 0; i < 10000; ++i) {
@@ -124,9 +125,11 @@ int main()
     //}
 
     A my_obj_A;
-    std::thread my_pop_Queue(&A::m_Msg_Pop_Queue, &my_obj_A);
+    std::thread my_pop_Queue1(&A::m_Msg_Pop_Queue, &my_obj_A);
+    std::thread my_pop_Queue2(&A::m_Msg_Pop_Queue, &my_obj_A);
     std::thread my_push_Queue(&A::m_Msg_Push_Queue, &my_obj_A); // use reference here to make sure push/pop same class data memeber
-    my_pop_Queue.join();
+    my_pop_Queue1.join();
+    my_pop_Queue2.join();
     my_push_Queue.join();
 
     std::cout << "Hello World!" << std::endl;
