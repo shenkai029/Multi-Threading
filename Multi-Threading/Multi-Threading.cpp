@@ -25,7 +25,7 @@ class A {
 public:
     void m_Msg_Push_Queue() {
         // lock_guard basicly lock the data when its obj created by constructor call and unlock when obj is out scope and destructor called
-        for (int i = 0; i < 10000; ++i) {
+        for (int i = 0; i < m_size; ++i) {
             {
                 //std::unique_lock<std::mutex> push_guard(m_mutex, std::try_to_lock); // if use lock_guard/unique_lock, no need use lock() and unlock()
                 std::unique_lock<std::mutex> push_guard(m_mutex, std::defer_lock); // bond m_mutex to push_guard, and init as unlock
@@ -33,7 +33,7 @@ public:
                 //if (push_guard.owns_lock()) {
                 std::cout << "m_Queue pushed 1 element : " << i << std::endl;
                 m_Queue.push_back(i);
-                //m_cond.notify_one(); // try to notify only one other thread that is in wait(), and continue excution
+                //m_cond.notify_one(); // try to notify only one other thread that is in wait(), and continue execution
                 m_cond.notify_all(); // try to notify not only one thread that is in wait()
                 //}
                 /*else {
@@ -46,7 +46,7 @@ public:
     // std::adopt_lock can be use as second argument for both lock_guard and unique_lock only when the mutex have been locked, so it won't 
     // call lock in constructor, but only will unlock the mutex when destrucor called
 
-    // std::try_to_lock will allow the thread do not have to wait for unlock of the mutex, and continue excution other code
+    // std::try_to_lock will allow the thread do not have to wait for unlock of the mutex, and continue execution other code
     // try_to_lock require the mutex unlocked before using it, otherwise will cause error
 
     // std::defer_lock will bond unique_lock obj to mutex obj and init it as unlock, and later we can call unique_lock memeber functioin
@@ -62,22 +62,28 @@ public:
 
     void m_Msg_Pop_Queue() {
 
-        int cmd = 0;
-        while (cmd < 9999) {
+        //int cmd = 0;
+        while (true) {
+            //if (m_count == 999) break;
             std::unique_lock<std::mutex> pop_guard(m_mutex);
 
-            // if wait() get false on second argument(func obj), it unlocks and stop excution until other thread call notify_one()
+            // if wait() get false on second argument(func obj), it unlocks and stop execution until other thread call notify_one()
             // if no second argument passed in, it gets false by default
             // once wait() get waked by notify_one() it will try to lock mutex until suncess to continue evaluate true/false again
-            // if wait() get true on second argument, it continues excution
+            // if wait() get true on second argument, it continues execution
             m_cond.wait(pop_guard, [this] { // use lambda to create a func object and pass to wait
-                if (!m_Queue.empty()) return true;
+                // for thread more than 1, we use shared m_count and check if it reaches the last number, if so wait() will get true
+                // and continue execution and break. If don't check m_count here, when 1 thread pop last number out, other threads 
+                // will forever wait here since the queue is empty. Also, if we don't share m_count here, other thread will not know
+                // the queue is empty and wait in dead loop
+                if (!m_Queue.empty() || m_count == m_size - 1) return true;
                 return false;
                 });
 
-            int cmd = m_Queue.front();
+            if (m_count == m_size - 1) break;
+            m_count = m_Queue.front();
             m_Queue.pop_front();
-            std::cout << "m_Queue popoed 1 element: " << cmd << ", threadID = " << std::this_thread::get_id() << std::endl;
+            std::cout << "m_Queue popoed 1 element: " << m_count << ", threadID = " << std::this_thread::get_id() << std::endl;
             pop_guard.unlock(); // release lock earlier for code efficiency
         }
         
@@ -108,6 +114,8 @@ private:
     std::list<int> m_Queue; // share data for multi-thread
     std::mutex m_mutex; // create mutex memeber to lock/unlock data
     std::condition_variable m_cond; //
+    int m_count;
+    const int m_size = 1000;
 };
 
 int main()
