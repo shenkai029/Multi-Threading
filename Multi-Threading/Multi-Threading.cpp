@@ -33,6 +33,7 @@ public:
                 //if (push_guard.owns_lock()) {
                 std::cout << "m_Queue pushed 1 element : " << i << std::endl;
                 m_Queue.push_back(i);
+                m_cond.notify_one(); // try to notify other thread that is in wait(), and continue excution
                 //}
                 /*else {
                     std::cout << "Did not get the lock, just do something else..." << std::endl;
@@ -56,33 +57,56 @@ public:
     // std::unique_lock<std::mutex> guard_02(std::move(guard_01)
     // also if we return a unique_lock obj from a function, the move constructor will be called to move same mutex to outer scope obj
 
+    // std:: condition_variable is actually a class and need to pair use with mutex object
+
     void m_Msg_Pop_Queue() {
-        
-        for (int i = 0; i < 10000; ++i) {
-            {
-                // add sleep to balance time between last unlock and current lock, otherwise pop will lock mutex faster than push
-                //std::this_thread::sleep_for(std::chrono::microseconds(1)); 
-                //m_mutex.lock();
-                if (!m_Queue.empty()) { // use double lock to add lock only when queue is empty
-                    std::unique_lock<std::mutex> pop_guard(m_mutex); // if use lock_guard/unique_lock, no need use lock() and unlock()
-                    //std::this_thread::sleep_for(std::chrono::milliseconds(200)); // add sleep to test try_to_lock
-                    if (!m_Queue.empty()) { // if queue is not empty
-                        int cmd = m_Queue.front();
-                        m_Queue.pop_front();
-                        // process cmd 
-                        std::cout << "m_Queue popoed 1 element: " << cmd << std::endl;
-                    }
-                }
-                else {
-                    std::cout << "Try to pop data from m_Queue, but it is empty now " << i << std::endl;
-                }
-            }
+
+        int cmd = 0;
+        while (cmd < 9999) {
+            std::unique_lock<std::mutex> pop_guard(m_mutex);
+
+            // if wait() get false on second argument(func obj), it unlocks and stop excution until other thread call notify_one()
+            // if no second argument passed in, it gets false by default
+            // once wait() get waked by notify_one() it will try to lock mutex until suncess to continue evaluate true/false again
+            // if wait() get true on second argument, it continues excution
+            m_cond.wait(pop_guard, [this] { // use lambda to create a func object and pass to wait
+                if (!m_Queue.empty()) return true;
+                return false;
+                });
+
+            int cmd = m_Queue.front();
+            m_Queue.pop_front();
+            pop_guard.unlock(); // release lock earlier for code efficiency
+            std::cout << "m_Queue popoed 1 element: " << cmd << std::endl;
         }
+        
+        //for (int i = 0; i < 10000; ++i) {
+        //    {
+        //        // add sleep to balance time between last unlock and current lock, otherwise pop will lock mutex faster than push
+        //        //std::this_thread::sleep_for(std::chrono::microseconds(1)); 
+        //        //m_mutex.lock();
+        //        if (!m_Queue.empty()) { // use double lock to add lock only when queue is empty
+        //            std::unique_lock<std::mutex> pop_guard(m_mutex); // if use lock_guard/unique_lock, no need use lock() and unlock()
+        //            //std::this_thread::sleep_for(std::chrono::milliseconds(200)); // add sleep to test try_to_lock
+        //            if (!m_Queue.empty()) { // if queue is not empty
+        //                int cmd = m_Queue.front();
+        //                m_Queue.pop_front();
+        //                // process cmd 
+        //                std::cout << "m_Queue popoed 1 element: " << cmd << std::endl;
+        //            }
+        //        }
+        //        else {
+        //            std::cout << "Try to pop data from m_Queue, but it is empty now " << i << std::endl;
+        //        }
+        //    }
+        //}
+        std::cout << "All numbers pop out" << std::endl;
     }
     
 private:
     std::list<int> m_Queue; // share data for multi-thread
     std::mutex m_mutex; // create mutex memeber to lock/unlock data
+    std::condition_variable m_cond; //
 };
 
 int main()
