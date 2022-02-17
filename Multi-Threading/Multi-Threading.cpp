@@ -115,7 +115,7 @@ private:
     std::mutex m_mutex; // create mutex memeber to lock/unlock data
     std::condition_variable m_cond; //
     int m_count;
-    const int m_size = 1000;
+    const int m_size = 3000;
 };
 
 int main()
@@ -135,9 +135,11 @@ int main()
     A my_obj_A;
     std::thread my_pop_Queue1(&A::m_Msg_Pop_Queue, &my_obj_A);
     std::thread my_pop_Queue2(&A::m_Msg_Pop_Queue, &my_obj_A);
+    std::thread my_pop_Queue3(&A::m_Msg_Pop_Queue, &my_obj_A);
     std::thread my_push_Queue(&A::m_Msg_Push_Queue, &my_obj_A); // use reference here to make sure push/pop same class data memeber
     my_pop_Queue1.join();
     my_pop_Queue2.join();
+    my_pop_Queue3.join();
     my_push_Queue.join();
 
     std::cout << "Hello World!" << std::endl;
