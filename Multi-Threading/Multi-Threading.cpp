@@ -29,14 +29,21 @@ int mythread(int num) {
     return 5;
 }
 
-void mythreadPrms(std::promise<int>& prms, int num) {
-    std::cout << "mythred() start, " << "threadid = " << std::this_thread::get_id() << std::endl;
+void mythreadPrms(std::promise<int>& prms, int num) { // take promise obj ref and a passed variable
+    std::cout << "mythredPrms() start, " << "threadid = " << std::this_thread::get_id() << std::endl;
     std::cout << "num value: " << num << ", threadid = " << std::this_thread::get_id() << std::endl;
     ++num;
     num *= 10;
     std::this_thread::sleep_for(std::chrono::milliseconds(5000));
-    std::cout << "mythred() end, " << "threadid = " << std::this_thread::get_id() << std::endl;
+    std::cout << "mythredPrms() end, " << "threadid = " << std::this_thread::get_id() << std::endl;
     prms.set_value(num);
+}
+
+void mythreadFutr(std::future<int>& futr) { // take future obj ref and print
+    std::cout << "mythredFutr() start, " << "threadid = " << std::this_thread::get_id() << std::endl;
+    std::cout << "futr value: " << futr.get() << ", threadid = " << std::this_thread::get_id() << std::endl;
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    std::cout << "mythredFutr() end, " << "threadid = " << std::this_thread::get_id() << std::endl;
 }
 
 
@@ -62,7 +69,9 @@ int main()
     std::thread th_obj(mythreadPrms, std::ref(m_prms), 180); // get its ref and pass argument
     th_obj.join(); // since we use std::thread here to create new thread, have to use join() here to wait
     std::future<int> result = m_prms.get_future(); // use get_future to return a std::future obj
-    std::cout << "mythread() return value: " << result.get() << std::endl; // print thread result using get()
+    //std::cout << "mythread() return value: " << result.get() << std::endl; // print thread result using get()
+    std::thread th_obj2(mythreadFutr, std::ref(result)); // pass future result to another thread
+    th_obj2.join();
     std::cout << "Hello World!" << std::endl;
 
     return 0;
