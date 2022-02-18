@@ -29,6 +29,16 @@ int mythread(int num) {
     return 5;
 }
 
+void mythreadPrms(std::promise<int>& prms, int num) {
+    std::cout << "mythred() start, " << "threadid = " << std::this_thread::get_id() << std::endl;
+    std::cout << "num value: " << num << ", threadid = " << std::this_thread::get_id() << std::endl;
+    ++num;
+    num *= 10;
+    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+    std::cout << "mythred() end, " << "threadid = " << std::this_thread::get_id() << std::endl;
+    prms.set_value(num);
+}
+
 
 // async is a function template to start an asyncronize task and return a std::future obj
 // asyncronisze taks means start a thread and run the starting function, we can use future obj get() to access its return result, however
@@ -43,19 +53,15 @@ int mythread(int num) {
 
 // std::packaged_task is class template that take function obj, and pack it as a thread calling function
 
+// std::promise is class template that allow assign variable value in one thread, and get that value in other thread 
+
 int main()
 {
     std::cout << "main() start, " << "threadid = " << std::this_thread::get_id() << std::endl;
-    std::packaged_task<int(int)> m_pack([] (int num) {
-        std::cout << "mythred() start, " << "threadid = " << std::this_thread::get_id() << std::endl;
-        std::cout << "num value: " << num << ", threadid = " << std::this_thread::get_id() << std::endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(5000));
-        std::cout << "mythred() end, " << "threadid = " << std::this_thread::get_id() << std::endl;
-        return 5;
-    }); // pack the function using lambda 
-    std::thread th_obj(std::ref(m_pack), 1); // get its ref and pass argument
+    std::promise<int> m_prms;
+    std::thread th_obj(mythreadPrms, std::ref(m_prms), 180); // get its ref and pass argument
     th_obj.join(); // since we use std::thread here to create new thread, have to use join() here to wait
-    std::future<int> result = m_pack.get_future(); // use get_future to return a std::future obj
+    std::future<int> result = m_prms.get_future(); // use get_future to return a std::future obj
     std::cout << "mythread() return value: " << result.get() << std::endl; // print thread result using get()
     std::cout << "Hello World!" << std::endl;
 
