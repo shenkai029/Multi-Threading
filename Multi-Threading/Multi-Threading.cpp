@@ -9,22 +9,31 @@
 #include <mutex>
 #include <future>
 
+class A {
+public:
 
-int mythread() {
-    std::cout << "mythred() start, " << "threadid = " << std::this_thread::get_id() << std::endl;
-    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
-    std::cout << "mythred() end, " << "threadid = " << std::this_thread::get_id() << std::endl;
-    return 5;
-}
+    int mythread(int num) {
+        std::cout << "mythred() start, " << "threadid = " << std::this_thread::get_id() << std::endl;
+        std::cout << "num value: " << num << ", threadid = " << std::this_thread::get_id() << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+        std::cout << "mythred() end, " << "threadid = " << std::this_thread::get_id() << std::endl;
+        return 5;
+    }
+};
+
 
 // async is a function template to start an asyncronize task and return a std::future obj
 // asyncronisze taks means start a thread and run the starting function, we can use future obj get() to access its return result, however
 // the result might not be able to get at current moment, but when the functioin execution done
+// wait() will only wait other thread complete and join main
+// if we don't use either wait() or get() after async, main will still wait other thread complete and exit
 
 int main()
 {
+    A m_obj;
+    int n = 11;
     std::cout << "main() start, " << "threadid = " << std::this_thread::get_id() << std::endl;
-    std::future<int> result = std::async(mythread);
+    std::future<int> result = std::async(&A::mythread, &m_obj, n);
     std::cout << "waiting other thread return value...." << std::endl;
     int def = 0;
     std::cout << "mythread() return value: " << result.get() << std::endl; // thread will stop here wait for mythread() to return result
