@@ -28,12 +28,18 @@ public:
 // wait() will only wait other thread complete and join main
 // if we don't use either wait() or get() after async, main will still wait other thread complete and exit
 
+// we can pass std::launch type as argument to async for certain purpose:
+// std::launch::deferred, means the thread calling function will only start when wait() or get() called
+// if we don't use wait()/get() after passing std::launch::deferred, new thread will never be created
+// std::launch::async, means the thread creation will happen immediately
+
 int main()
 {
     A m_obj;
     int n = 11;
     std::cout << "main() start, " << "threadid = " << std::this_thread::get_id() << std::endl;
-    std::future<int> result = std::async(&A::mythread, &m_obj, n);
+    std::future<int> result = std::async(std::launch::deferred, &A::mythread, &m_obj, n); //defered will delay thread call until wait()/get()
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     std::cout << "waiting other thread return value...." << std::endl;
     int def = 0;
     std::cout << "mythread() return value: " << result.get() << std::endl; // thread will stop here wait for mythread() to return result
