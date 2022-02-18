@@ -21,6 +21,14 @@ public:
     }
 };
 
+int mythread(int num) {
+    std::cout << "mythred() start, " << "threadid = " << std::this_thread::get_id() << std::endl;
+    std::cout << "num value: " << num << ", threadid = " << std::this_thread::get_id() << std::endl;
+    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+    std::cout << "mythred() end, " << "threadid = " << std::this_thread::get_id() << std::endl;
+    return 5;
+}
+
 
 // async is a function template to start an asyncronize task and return a std::future obj
 // asyncronisze taks means start a thread and run the starting function, we can use future obj get() to access its return result, however
@@ -33,16 +41,16 @@ public:
 // if we don't use wait()/get() after passing std::launch::deferred, new thread will never be created
 // std::launch::async is the default argument, which means the thread creation will happen right away
 
+// std::packaged_task is class template that take function obj, and pack it as a thread calling function
+
 int main()
 {
-    A m_obj;
-    int n = 11;
     std::cout << "main() start, " << "threadid = " << std::this_thread::get_id() << std::endl;
-    std::future<int> result = std::async(std::launch::async, &A::mythread, &m_obj, n); //async will create thread call right away
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    std::cout << "waiting other thread return value...." << std::endl;
-    int def = 0;
-    std::cout << "mythread() return value: " << result.get() << std::endl; // thread will stop here wait for mythread() to return result
+    std::packaged_task<int(int)> m_pack(mythread); // pack the function
+    std::thread th_obj(std::ref(m_pack), 1); // get its ref and pass argument
+    th_obj.join(); // since we use std::thread here to create new thread, have to use join() here to wait
+    std::future<int> result = m_pack.get_future(); // use get_future to return a std::future obj
+    std::cout << "mythread() return value: " << result.get() << std::endl; // print thread result using get()
     std::cout << "Hello World!" << std::endl;
 
     return 0;
