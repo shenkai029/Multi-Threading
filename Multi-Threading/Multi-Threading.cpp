@@ -118,6 +118,17 @@ private:
     const int m_size = 3000;
 };
 
+int m_count_glb = 0;
+std::mutex m_mutex_glb;
+
+void mythread() {
+    for (int i = 0; i < 10000000; ++i) {
+        m_mutex_glb.lock();
+        ++m_count_glb;
+        m_mutex_glb.unlock();
+    }
+}
+
 int main()
 {
     //std::vector<std::thread> my_thread;
@@ -132,15 +143,24 @@ int main()
     //    it->join();
     //}
 
-    A my_obj_A;
-    std::thread my_pop_Queue1(&A::m_Msg_Pop_Queue, &my_obj_A);
-    std::thread my_pop_Queue2(&A::m_Msg_Pop_Queue, &my_obj_A);
-    std::thread my_pop_Queue3(&A::m_Msg_Pop_Queue, &my_obj_A);
-    std::thread my_push_Queue(&A::m_Msg_Push_Queue, &my_obj_A); // use reference here to make sure push/pop same class data memeber
-    my_pop_Queue1.join();
-    my_pop_Queue2.join();
-    my_pop_Queue3.join();
-    my_push_Queue.join();
+    //A my_obj_A;
+    //std::thread my_pop_Queue1(&A::m_Msg_Pop_Queue, &my_obj_A);
+    //std::thread my_pop_Queue2(&A::m_Msg_Pop_Queue, &my_obj_A);
+    //std::thread my_pop_Queue3(&A::m_Msg_Pop_Queue, &my_obj_A);
+    //std::thread my_push_Queue(&A::m_Msg_Push_Queue, &my_obj_A); // use reference here to make sure push/pop same class data memeber
+    //my_pop_Queue1.join();
+    //my_pop_Queue2.join();
+    //my_pop_Queue3.join();
+    //my_push_Queue.join();
+
+    std::thread th_obj1(mythread);
+    std::thread th_obj2(mythread);
+    th_obj1.join();
+    th_obj2.join();
+    // use 2 thread to increment m_count_glb 10 million time should get 20 million but the result is less than 20 million
+    // this is because 1 thread could interrupt another thread when they write to same variable so increment will not be completed
+    // use mutex will lock the data and make write/read saft but the code will become very slow
+    std::cout << "Final reuslt of m_count : " << m_count_glb << std::endl;
 
     std::cout << "Hello World!" << std::endl;
 
