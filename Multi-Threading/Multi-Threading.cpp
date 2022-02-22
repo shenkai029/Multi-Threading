@@ -118,14 +118,15 @@ private:
     const int m_size = 3000;
 };
 
-int m_count_glb = 0;
+//int m_count_glb = 0;
+std::atomic<int> m_count_glb = 0;
 std::mutex m_mutex_glb;
 
 void mythread() {
     for (int i = 0; i < 10000000; ++i) {
-        m_mutex_glb.lock();
-        ++m_count_glb;
-        m_mutex_glb.unlock();
+        //m_mutex_glb.lock();
+        ++m_count_glb; // atomic execution won't be interupt by other threads
+        //m_mutex_glb.unlock();
     }
 }
 
@@ -157,9 +158,16 @@ int main()
     std::thread th_obj2(mythread);
     th_obj1.join();
     th_obj2.join();
+
     // use 2 thread to increment m_count_glb 10 million time should get 20 million but the result is less than 20 million
     // this is because 1 thread could interrupt another thread when they write to same variable so increment will not be completed
-    // use mutex will lock the data and make write/read saft but the code will become very slow
+    // use mutex will lock the data and make write/read saft but the code will become very slow, about total 7 sec
+    
+    // use std::atomic instead of mutex, will also make the execution not be interupt by other threads and much faster than use mutex
+    // however, mutex will work for multiple code lines execution, while atomic only works for single data/variable
+
+
+
     std::cout << "Final reuslt of m_count : " << m_count_glb << std::endl;
 
     std::cout << "Hello World!" << std::endl;
