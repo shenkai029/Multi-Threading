@@ -65,8 +65,8 @@ int main()
     std::thread th_obj1(std::ref(th_pack), 1);
     th_obj1.join(); // since we use std::thread here to create new thread, have to use join() here to wait
     
-    std::future<int> result = th_pack.get_future();
-    std::shared_future<int> res_shared(std::move(result)); // or use result.share(), result will be empty after move
+    //std::future<int> result = th_pack.get_future();
+    std::shared_future<int> res_shared(th_pack.get_future()); // or use result.share(), result will be empty after move
     //std::cout << "mythread() return value: " << result.get() << std::endl; // print thread result using get()
     //std::cout << "mythread() return value: " << result.get() << std::endl; // print thread result using get()
     std::thread th_obj2(mythreadSharedFutr, std::ref(res_shared)); // pass future result to another thread
