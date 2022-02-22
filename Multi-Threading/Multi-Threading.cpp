@@ -41,6 +41,7 @@ void mythreadPrms(std::promise<int>& prms, int num) { // take promise obj ref an
 
 void mythreadFutr(std::future<int>& futr) { // take future obj ref and print
     std::cout << "mythredFutr() start, " << "threadid = " << std::this_thread::get_id() << std::endl;
+    // std::future::get() was design use move semantic, so it cannot be use twice for same result since it will be empty
     std::cout << "futr value: " << futr.get() << ", threadid = " << std::this_thread::get_id() << std::endl;
     std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     std::cout << "mythredFutr() end, " << "threadid = " << std::this_thread::get_id() << std::endl;
@@ -51,19 +52,15 @@ void mythreadFutr(std::future<int>& futr) { // take future obj ref and print
 int main()
 {
     std::cout << "main() start, " << "threadid = " << std::this_thread::get_id() << std::endl;    
-    std::future<int> result = std::async(std::launch::deferred, mythread, 10); 
+    std::packaged_task<int(int)> th_pack(mythread);
+    std::thread th_obj1(std::ref(th_pack), 1);
+    th_obj1.join(); // since we use std::thread here to create new thread, have to use join() here to wait
+    
+    std::future<int> result = th_pack.get_future();
     //std::cout << "mythread() return value: " << result.get() << std::endl; // print thread result using get()
-    std::future_status status = result.wait_for(std::chrono::seconds(6));
-    if (status == std::future_status::timeout) { // means thread execution not finished
-        std::cout << "Thread execution timeout!" << std::endl;
-    }
-    else if (status == std::future_status::ready) { // means thread execution finished
-        std::cout << "Thread execution done!" << std::endl;
-    }
-    else if (status == std::future_status::deferred) { // when use deferred in async
-        std::cout << "Thread execution delayed!" << std::endl;
-        std::cout << "return value : " << result.get() << std::endl;
-    }
+    //std::cout << "mythread() return value: " << result.get() << std::endl; // print thread result using get()
+    std::thread th_obj2(mythreadFutr, std::ref(result)); // pass future result to another thread
+    th_obj2.join();
     std::cout << "Hello World!" << std::endl;
 
     return 0;
