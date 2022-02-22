@@ -121,12 +121,20 @@ private:
 //int m_count_glb = 0;
 std::atomic<int> m_count_glb = 0;
 std::mutex m_mutex_glb;
+std::atomic<bool> m_is_end = false;
 
 void mythread() {
     for (int i = 0; i < 10000000; ++i) {
         //m_mutex_glb.lock();
         ++m_count_glb; // atomic execution won't be interupt by other threads
         //m_mutex_glb.unlock();
+    }
+}
+
+void mythreadbool() {
+    while (m_is_end == false) {
+        std::cout << "mythreadbool thread_id = " << std::this_thread::get_id() << "running" << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     }
 }
 
@@ -154,8 +162,10 @@ int main()
     //my_pop_Queue3.join();
     //my_push_Queue.join();
 
-    std::thread th_obj1(mythread);
-    std::thread th_obj2(mythread);
+    std::thread th_obj1(mythreadbool);
+    std::thread th_obj2(mythreadbool);
+    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+    m_is_end = true;
     th_obj1.join();
     th_obj2.join();
 
@@ -168,7 +178,9 @@ int main()
 
 
 
-    std::cout << "Final reuslt of m_count : " << m_count_glb << std::endl;
+    //std::cout << "Final reuslt of m_count : " << m_count_glb << std::endl;
+
+
 
     std::cout << "Hello World!" << std::endl;
 
