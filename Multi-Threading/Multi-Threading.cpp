@@ -55,7 +55,7 @@ void mythreadSharedFutr(std::shared_future<int>& futr) { // take future obj ref 
     std::cout << "mythredFutr() end, " << "threadid = " << std::this_thread::get_id() << std::endl;
 }
 
-// std::shared_future is a class template. 
+// std::shared_future is a class template that can be get() multiple times
 
 
 int main()
