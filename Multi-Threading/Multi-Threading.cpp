@@ -47,13 +47,11 @@ void mythreadFutr(std::future<int>& futr) { // take future obj ref and print
 }
 
 
-// async is a function template to start an asyncronize task and return a std::future obj
-
 
 int main()
 {
     std::cout << "main() start, " << "threadid = " << std::this_thread::get_id() << std::endl;    
-    std::future<int> result = std::async(mythread, 10); 
+    std::future<int> result = std::async(std::launch::deferred, mythread, 10); 
     //std::cout << "mythread() return value: " << result.get() << std::endl; // print thread result using get()
     std::future_status status = result.wait_for(std::chrono::seconds(6));
     if (status == std::future_status::timeout) { // means thread execution not finished
@@ -61,6 +59,10 @@ int main()
     }
     else if (status == std::future_status::ready) { // means thread execution finished
         std::cout << "Thread execution done!" << std::endl;
+    }
+    else if (status == std::future_status::deferred) { // when use deferred in async
+        std::cout << "Thread execution delayed!" << std::endl;
+        std::cout << "return value : " << result.get() << std::endl;
     }
     std::cout << "Hello World!" << std::endl;
 
