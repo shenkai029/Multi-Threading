@@ -48,30 +48,20 @@ void mythreadFutr(std::future<int>& futr) { // take future obj ref and print
 
 
 // async is a function template to start an asyncronize task and return a std::future obj
-// asyncronisze taks means start a thread and run the starting function, we can use future obj get() to access its return result, however
-// the result might not be able to get at current moment, but when the functioin execution done
-// wait() will only wait other thread complete and join main
-// if we don't use either wait() or get() after async, main will still wait other thread complete and exit
 
-// we can pass std::launch type as argument to async for certain purpose:
-// std::launch::deferred, means the thread calling function will only start when wait() or get() called
-// if we don't use wait()/get() after passing std::launch::deferred, new thread will never be created
-// std::launch::async is the default argument, which means the thread creation will happen right away
-
-// std::packaged_task is class template that take function obj, and pack it as a thread calling function
-
-// std::promise is class template that allow assign variable value in one thread, and get that value in other thread 
 
 int main()
 {
-    std::cout << "main() start, " << "threadid = " << std::this_thread::get_id() << std::endl;
-    std::promise<int> m_prms;
-    std::thread th_obj(mythreadPrms, std::ref(m_prms), 180); // get its ref and pass argument
-    th_obj.join(); // since we use std::thread here to create new thread, have to use join() here to wait
-    std::future<int> result = m_prms.get_future(); // use get_future to return a std::future obj
+    std::cout << "main() start, " << "threadid = " << std::this_thread::get_id() << std::endl;    
+    std::future<int> result = std::async(mythread, 10); 
     //std::cout << "mythread() return value: " << result.get() << std::endl; // print thread result using get()
-    std::thread th_obj2(mythreadFutr, std::ref(result)); // pass future result to another thread
-    th_obj2.join();
+    std::future_status status = result.wait_for(std::chrono::seconds(6));
+    if (status == std::future_status::timeout) { // means thread execution not finished
+        std::cout << "Thread execution timeout!" << std::endl;
+    }
+    else if (status == std::future_status::ready) { // means thread execution finished
+        std::cout << "Thread execution done!" << std::endl;
+    }
     std::cout << "Hello World!" << std::endl;
 
     return 0;
