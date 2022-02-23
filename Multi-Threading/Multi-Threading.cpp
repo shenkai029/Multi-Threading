@@ -24,7 +24,7 @@ public:
 int mythread(int num) {
     std::cout << "mythred() start, " << "threadid = " << std::this_thread::get_id() << std::endl;
     std::cout << "num value: " << num << ", threadid = " << std::this_thread::get_id() << std::endl;
-    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     std::cout << "mythred() end, " << "threadid = " << std::this_thread::get_id() << std::endl;
     return 5;
 }
@@ -55,12 +55,12 @@ void mythreadFutr(std::future<int>& futr) { // take future obj ref and print
 
 // the difference between std::async and std::thread is that, async will not be creating new thread in some cases
 // i.e. if we use std::launch::deferred in argument, and use get() in main thread, new thread will not be created
-// 
+// use std::launch::async | std::launch::deferred means if create new thread or not will determined by the system
+// if we don't pass argument, above combination will be use for std::async, means system will take control
 
 // we can pass std::launch type as argument to async for certain purpose:
 // std::launch::deferred, means the thread calling function will only start when wait() or get() called
 // if we don't use wait()/get() after passing std::launch::deferred, new thread will never be created
-// std::launch::async is the default argument, which means the thread creation will happen right away
 
 // std::packaged_task is class template that take function obj, and pack it as a thread calling function
 
@@ -77,7 +77,7 @@ int main()
     //std::thread th_obj2(mythreadFutr, std::ref(result)); // pass future result to another thread
     //th_obj2.join();
     //std::cout << "Hello World!" << std::endl;
-    std::future<int> result = std::async(std::launch::deferred, mythread, 180);
+    std::future<int> result = std::async(std::launch::deferred | std::launch::async, mythread, 180);
     std::cout << "thread running result : " << result.get() << std::endl;
 
     return 0;
