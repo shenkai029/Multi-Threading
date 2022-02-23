@@ -126,7 +126,9 @@ std::atomic<bool> m_is_end = false;
 void mythread() {
     for (int i = 0; i < 10000000; ++i) {
         //m_mutex_glb.lock();
-        ++m_count_glb; // atomic execution won't be interupt by other threads
+        //++m_count_glb; // atomic execution won't be interupt by other threads
+        //m_count_glb += 1;  // same at last expression
+        m_count_glb = m_count_glb + 1; // this expression will have problem on total result
         //m_mutex_glb.unlock();
     }
 }
@@ -162,12 +164,12 @@ int main()
     //my_pop_Queue3.join();
     //my_push_Queue.join();
 
-    std::thread th_obj1(mythreadbool);
+   /* std::thread th_obj1(mythreadbool);
     std::thread th_obj2(mythreadbool);
     std::this_thread::sleep_for(std::chrono::milliseconds(5000));
     m_is_end = true;
     th_obj1.join();
-    th_obj2.join();
+    th_obj2.join();*/
 
     // use 2 thread to increment m_count_glb 10 million time should get 20 million but the result is less than 20 million
     // this is because 1 thread could interrupt another thread when they write to same variable so increment will not be completed
@@ -177,8 +179,11 @@ int main()
     // however, mutex will work for multiple code lines execution, while atomic only works for single data/variable
 
 
-
-    //std::cout << "Final reuslt of m_count : " << m_count_glb << std::endl;
+    std::thread th_obj1(mythread);
+    std::thread th_obj2(mythread);
+    th_obj1.join();
+    th_obj2.join();
+    std::cout << "Final reuslt of m_count : " << m_count_glb << std::endl;
 
 
 
