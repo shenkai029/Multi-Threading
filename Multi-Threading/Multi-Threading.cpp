@@ -57,6 +57,11 @@ void mythreadFutr(std::future<int>& futr) { // take future obj ref and print
 // i.e. if we use std::launch::deferred in argument, and use get() in main thread, new thread will not be created
 // use std::launch::async | std::launch::deferred means if create new thread or not will determined by the system
 // if we don't pass argument, above combination will be use for std::async, means system will take control
+// if use std::thread create new thread, if the system don't have enough resource, the program might crush
+// if use std::async without passing argument, the system will take control of resource use to prevent program crush 
+// however using no argument might cause execution result different as program continue running, because when system resource 
+// become tight it might choose to not creating new thread, sometime won't even call the thread if there is no get() called
+// std::async can get the thread return value by calling get(), which is much easier than using std::thread
 
 // we can pass std::launch type as argument to async for certain purpose:
 // std::launch::deferred, means the thread calling function will only start when wait() or get() called
