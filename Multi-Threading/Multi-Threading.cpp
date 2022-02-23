@@ -53,6 +53,10 @@ void mythreadFutr(std::future<int>& futr) { // take future obj ref and print
 // wait() will only wait other thread complete and join main
 // if we don't use either wait() or get() after async, main will still wait other thread complete and exit
 
+// the difference between std::async and std::thread is that, async will not be creating new thread in some cases
+// i.e. if we use std::launch::deferred in argument, and use get() in main thread, new thread will not be created
+// 
+
 // we can pass std::launch type as argument to async for certain purpose:
 // std::launch::deferred, means the thread calling function will only start when wait() or get() called
 // if we don't use wait()/get() after passing std::launch::deferred, new thread will never be created
@@ -65,14 +69,16 @@ void mythreadFutr(std::future<int>& futr) { // take future obj ref and print
 int main()
 {
     std::cout << "main() start, " << "threadid = " << std::this_thread::get_id() << std::endl;
-    std::promise<int> m_prms;
-    std::thread th_obj(mythreadPrms, std::ref(m_prms), 180); // get its ref and pass argument
-    th_obj.join(); // since we use std::thread here to create new thread, have to use join() here to wait
-    std::future<int> result = m_prms.get_future(); // use get_future to return a std::future obj
-    //std::cout << "mythread() return value: " << result.get() << std::endl; // print thread result using get()
-    std::thread th_obj2(mythreadFutr, std::ref(result)); // pass future result to another thread
-    th_obj2.join();
-    std::cout << "Hello World!" << std::endl;
+    //std::promise<int> m_prms;
+    //std::thread th_obj(mythreadPrms, std::ref(m_prms), 180); // get its ref and pass argument
+    //th_obj.join(); // since we use std::thread here to create new thread, have to use join() here to wait
+    //std::future<int> result = m_prms.get_future(); // use get_future to return a std::future obj
+    ////std::cout << "mythread() return value: " << result.get() << std::endl; // print thread result using get()
+    //std::thread th_obj2(mythreadFutr, std::ref(result)); // pass future result to another thread
+    //th_obj2.join();
+    //std::cout << "Hello World!" << std::endl;
+    std::future<int> result = std::async(std::launch::deferred, mythread, 180);
+    std::cout << "thread running result : " << result.get() << std::endl;
 
     return 0;
 }
